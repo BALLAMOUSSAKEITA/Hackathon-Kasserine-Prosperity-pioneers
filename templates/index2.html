@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat avec Mistral</title>
+    <script>
+        async function sendMessage() {
+            const userMessage = document.getElementById("message").value;
+            const response = await fetch("http://127.0.0.1:5000/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userMessage })
+            });
+            const data = await response.json();
+            document.getElementById("response").innerText = "Mistral: " + (data.response || data.error);
+        }
+    </script>
+</head>
+<body>
+    <h1>Chat avec Mistral 7B</h1>
+    <input type="text" id="message" placeholder="Écris un message">
+    <button onclick="sendMessage()">Envoyer</button>
+    <p id="response"></p>
+</body>
+</html>

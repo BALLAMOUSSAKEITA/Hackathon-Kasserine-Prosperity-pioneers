@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte des Niveaux Archéologiques</title>
+    <style>
+        /* Map and general styles */
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background-size: cover;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .path-line {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0.2),
+                rgba(255,255,255,0.8) 50%,
+                rgba(255,255,255,0.2)
+            );
+            z-index: 1;
+            border-radius: 2px;
+        }
+
+
+        .level-point {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            border: 4px solid rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .level-point.unlocked {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .level-point.locked {
+            background: linear-gradient(145deg, #ff6b6b, #e66262);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        
+        #level1 { top: 50%; left: 13%; }
+        #level2 { top: 50%; left: 33%; }
+        #level3 { top: 50%; left: 53%; }
+        #level4 { top: 50%; left: 73%; }
+
+        .level-title {
+            position: absolute;
+            top: 70%;
+            width: 90px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        #level1-title { left: 13%; }
+        #level2-title { left: 33%; }
+        #level3-title { left: 53%; }
+        #level4-title { left: 73%; }
+
+        .level-content {
+            display: none;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .level-content.active {
+            display: block;
+        }
+
+      
+        body {
+            font-family: 'Comfortaa', cursive;
+            background: linear-gradient(to right, #150212, #150212);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .puzzle-container {
+            display: grid;
+            grid-template-columns: 800px 300px;  
+            gap: 20px;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .event-description {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            width: 800px;
+            height: 1200px;
+        }
+        .piece-bank {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: fit-content;
+            align-content: start;
+        }
+        
+      
+        .puzzle-cell {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .cell-label {
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px 8px 0 0;
+            margin: 0;
+        }
+        
+        .puzzle-piece {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            cursor: move;
+            border-radius: 8px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Keep all other existing styles */
+        .puzzle-piece:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .puzzle-piece.placed {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 6px;
+            object-fit: cover;
+            z-index: 5;
+        }
+
+        
+        .puzzle-cell.dragover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.02);
+        }
+        
+        .puzzle-cell.correct {
+            border: 2px solid #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .puzzle-cell.incorrect {
+            border: 2px solid #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+        
+        .score-display {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.5rem;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 1200px) {
+            .puzzle-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .puzzle-grid {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 4/3;
+            }
+            
+            .piece-bank {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .level-info {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .level-point.completed {
+            background: linear-gradient(145deg, #45a049, #388e3c);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+
+        /* Memory puzzle styles */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front,
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-front {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-back {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotateY(180deg);
+        }
+
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .score-panel {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .quiz-question {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .quiz-options {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+        }
+
+        .quiz-options li {
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.3s;
+        }
+
+        .quiz-options li:hover {
+            background: rgba(76, 175, 80, 0.3);
+        }
+
+        .quiz-options li.correct {
+            background: rgba(76, 175, 80, 0.5);
+        }
+
+        .quiz-options li.incorrect {
+            background: rgba(255, 107, 107, 0.5);
+        }
+
+        .quiz-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .quiz-button:hover {
+            background-color: #45a049;
+        }
+
+        .word-search-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .word-search-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+        }
+
+        .word-search-cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .word-search-cell.selected {
+            background: rgba(76, 175, 80, 0.3);
+        }
+
+        .word-list {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .word-list div {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .final-message {
+            text-align: center;
+            font-size: 1.5em;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+</head>
+<body>
+    <div class="game-container">
+        <div class="map-container">
+       
+
+            <div class="level-point" id="level1" onclick="showLevel(1)">1</div>
+            <div class="level-point locked" id="level2" onclick="showLevel(2)">2</div>
+            <div class="level-point locked" id="level3" onclick="showLevel(3)">3</div>
+            <div class="level-point locked" id="level4" onclick="showLevel(4)">4</div>
+
+            <div class="level-title" id="level1-title">Niveau 1</div>
+            <div class="level-title" id="level2-title">Niveau 2</div>
+            <div class="level-title" id="level3-title">Niveau 3</div>
+            <div class="level-title" id="level4-title">Niveau 4</div>
+        </div>
+
+        <!-- Copy puzzle content for each level -->
+        <div id="level1-content" class="level-content">
+            <div class="puzzle-container">
+                <div class="event-description">
+                    <h2>Puzzle Archéologique de Sbiba</h2>
+                    <p>Placez les images sur les descriptions correspondantes</p>
+                </div>
+        
+                <div class="puzzle-grid">
+                    <div class="puzzle-cell" data-position="0"><div class="cell-label">Temple Romain</div></div>
+                    <div class="puzzle-cell" data-position="1"><div class="cell-label">Arc de Triomphe</div></div>
+                    <div class="puzzle-cell" data-position="2"><div class="cell-label">Forum Antique</div></div>
+                    <div class="puzzle-cell" data-position="3"><div class="cell-label">Théâtre Romain</div></div>
+                    <div class="puzzle-cell" data-position="4"><div class="cell-label">Thermes Romains</div></div>
+                    <div class="puzzle-cell" data-position="5"><div class="cell-label">Basilique</div></div>
+                    <div class="puzzle-cell" data-position="6"><div class="cell-label">Capitole</div></div>
+                    <div class="puzzle-cell" data-position="7"><div class="cell-label">Nécropole</div></div>
+                    <div class="puzzle-cell" data-position="8"><div class="cell-label">Aqueduc</div></div>
+                    <div class="puzzle-cell" data-position="9"><div class="cell-label">Villa Romaine</div></div>
+                    <div class="puzzle-cell" data-position="10"><div class="cell-label">Citadelle Byzantine</div></div>
+                    <div class="puzzle-cell" data-position="11"><div class="cell-label">Mosaïque Romaine</div></div>
+                </div>
+        
+                <div class="piece-bank">
+                    <img src="{{ url_for('static', filename='assets/images/sites/temple1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="0"
+                         alt="Temple Romain">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/arc1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="1"
+                         alt="Arc de Triomphe">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/forum1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="2"
+                         alt="Forum Antique">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/theatre1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="3"
+                         alt="Théâtre Romain">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/thermes1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="4"
+                         alt="Thermes Romains">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/basilique1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="5"
+                         alt="Basilique">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/capitole1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="6"
+                         alt="Capitole">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/necropole1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="7"
+                         alt="Nécropole">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/aqueduc1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="8"
+                         alt="Aqueduc">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/villa1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/temple.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="9"
+                         alt="Villa Romaine">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/citadelle1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/temple.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="10"
+                         alt="Citadelle Byzantine">
+                         
+                    <img src="{{ url_for('static', filename='assets/images/sites/mosaique1.jpg') }}"
+                         data-final-image="{{ url_for('static', filename='assets/images/sites/temple.jpg') }}"
+                         class="puzzle-piece"
+                         draggable="true"
+                         data-correct="11"
+                         alt="Mosaïque Romaine">
+                </div>
+                <div class="score-display" id="score-display"></div>
+            </div>
+        </div>
+
+        <!-- Level 2 content with memory puzzle -->
+        <div id="level2-content" class="level-content">
+            <div class="game-container">
+                <div class="score-panel">
+                    <div>Temps: <span id="timer">0:00</span></div>
+                    <div>Mouvements: <span id="moves">0</span></div>
+                    <div>Paires trouvées: <span id="pairs">0</span>/12</div>
+                </div>
+                <div class="memory-grid" id="grid">
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Level 3 content with quiz game -->
+        <div id="level3-content" class="level-content">
+            <div class="quiz-container">
+                <div class="quiz-question" id="quiz-question">Question will appear here</div>
+                <ul class="quiz-options" id="quiz-options">
+                    <!-- Options will be dynamically generated here -->
+                </ul>
+                <button class="quiz-button" onclick="nextQuestion()">Next Question</button>
+            </div>
+        </div>
+
+        <!-- Level 4 content with word search game -->
+        <div id="level4-content" class="level-content">
+            <div class="word-search-container">
+                <div class="word-search-grid" id="word-search-grid">
+                    <!-- Word search grid will be dynamically generated here -->
+                </div>
+                <div class="word-list" id="word-list">
+                    <!-- Word list will be dynamically generated here -->
+                </div>
+            </div>
+        </div>
+
+     
+    </div>
+    <div class="audio-controls">
+    
+        <audio id="audio-1" style="display: none;"></audio>
+        <audio id="audio-2" style="display: none;"></audio>
+        <audio id="audio-3" style="display: none;"></audio>
+        <audio id="audio-4" style="display: none;"></audio>
+    </div>
+    <script>
+        let currentLevel = 1;
+        const totalLevels = 4;
+        let moves = 0;
+        let score = 100;
+        let correctPlacements = 0;
+        let currentAudio = null;
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        function initializePuzzle(levelNum) {
+            moves = 0;
+            score = 100;
+            correctPlacements = 0;
+        
+            const levelContent = document.getElementById(`level${levelNum}-content`);
+            const cells = levelContent.querySelectorAll('.puzzle-cell');
+            const pieceBank = levelContent.querySelector('.piece-bank');
+            const pieces = Array.from(levelContent.querySelectorAll('.puzzle-piece'));
+        
+            pieces.forEach(piece => {
+                piece.style.visibility = 'visible';
+                piece.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', piece.dataset.correct);
+                    piece.classList.add('dragging');
+                });
+        
+                piece.addEventListener('dragend', () => {
+                    piece.classList.remove('dragging');
+                });
+            });
+        
+            const shuffledPieces = shuffleArray([...pieces]);
+            pieceBank.innerHTML = '';
+            shuffledPieces.forEach(piece => pieceBank.appendChild(piece));
+        
+            cells.forEach(cell => {
+                cell.innerHTML = `<div class="cell-label">${cell.querySelector('.cell-label').textContent}</div>`;
+                cell.style.border = '2px dashed rgba(255,255,255,0.3)';
+                cell.style.background = 'rgba(255, 255, 255, 0.1)';
+        
+                cell.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    cell.classList.add('dragover');
+                });
+        
+                cell.addEventListener('dragleave', () => {
+                    cell.classList.remove('dragover');
+                });
+        
+                cell.addEventListener('drop', e => {
+                    e.preventDefault();
+                    cell.classList.remove('dragover');
+                    
+                    const correctPosition = e.dataTransfer.getData('text');
+                    const piece = levelContent.querySelector(`[data-correct="${correctPosition}"]`);
+                    
+                    if (!cell.querySelector('.puzzle-piece')) {
+                        if (correctPosition === cell.dataset.position) {
+                            const clone = piece.cloneNode(true);
+                            clone.classList.add('placed');
+                            cell.appendChild(clone);
+                            piece.style.visibility = 'hidden';
+        
+                            correctPlacements++;
+                            cell.style.border = '2px solid #4CAF50';
+                            cell.style.background = 'rgba(76, 175, 80, 0.1)';
+                            score = Math.min(100, score + 10);
+                        } else {
+                            cell.style.border = '2px solid #ff6b6b';
+                            cell.style.background = 'rgba(255, 107, 107, 0.1)';
+                            score = Math.max(0, score - 5);
+                            piece.style.visibility = 'visible'; 
+                            pieceBank.appendChild(piece); 
+                        }
+        
+                        moves++;
+                        updateScore(levelNum);
+                        checkCompletion(levelNum);
+                    }
+                });
+            });
+        
+            document.querySelector(`#level${levelNum}-content .score-display`).style.display = 'none';
+        }
+
+        function showLevel(levelNum) {
+            if (levelNum > currentLevel) {
+                alert('Terminez d\'abord le niveau précédent!');
+                return;
+            }
+            
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            
+            document.querySelectorAll('.level-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const levelContent = document.getElementById(`level${levelNum}-content`);
+            levelContent.classList.add('active');
+            
+            const audio = document.getElementById(`audio-${levelNum}`);
+            if (!audio.src) {
+                audio.src = `/audio/${levelNum}`;
+            }
+            audio.currentTime = 0;
+            audio.play().catch(error => {
+                console.error('Failed to play audio:', error);
+            });
+            currentAudio = audio;
+            
+            initializePuzzle(levelNum);
+        }
+        
+        function playLevelAudio(level) {
+            const audio = document.getElementById(`audio-${level}`);
+            const button = document.querySelector(`#level${level}-content .play-btn`);
+            
+            if (currentAudio && currentAudio !== audio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                document.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.innerHTML = '<i class="fas fa-play"></i> Écouter l\'histoire';
+                });
+            }
+            
+            if (!audio.src) {
+                audio.src = `/audio/${level}`;
+            }
+            
+            if (audio.paused) {
+                audio.play();
+                button.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                currentAudio = audio;
+            } else {
+                audio.pause();
+                button.innerHTML = '<i class="fas fa-play"></i> Écouter l\'histoire';
+            }
+        }
+        
+        function updateScore(levelNum) {
+            const levelContent = document.getElementById(`level${levelNum}-content`);
+            const scoreDisplay = levelContent.querySelector('.score-display');
+            const finalScore = Math.max(0, score - (moves - correctPlacements) * 2);
+            
+            scoreDisplay.innerHTML = `
+                Score actuel: ${finalScore}/100<br>
+                Placements corrects: ${correctPlacements}/12<br>
+                Mouvements: ${moves}
+            `;
+            scoreDisplay.style.display = 'block';
+        }
+        
+        function unlockNextLevel() {
+            if (currentLevel < totalLevels) {
+                currentLevel++;
+                const nextLevel = document.getElementById(`level${currentLevel}`);
+                nextLevel.classList.remove('locked');
+                nextLevel.classList.add('unlocked');
+                
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    currentAudio = null;
+                }
+                
+                setTimeout(() => {
+                    showLevel(currentLevel);
+                }, 2000);
+            } else {
+                showFinalMessage();
+            }
+        }
+
+        function checkCompletion(levelNum) {
+            const levelContent = document.getElementById(`level${levelNum}-content`);
+            const placedPieces = levelContent.querySelectorAll('.puzzle-piece.placed');
+            
+            if (placedPieces.length === 12) {
+                const finalScore = Math.max(0, (correctPlacements * 100)/12);
+                
+                levelContent.querySelector('.score-display').innerHTML = `
+                    Puzzle complété!<br>
+                    Placements corrects: ${correctPlacements}/12<br>
+                    Mouvements totaux: ${moves}<br>
+                    Score final: ${finalScore.toFixed(2)}/100
+                `;
+                
+                unlockNextLevel();
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            showLevel(1);
+            const firstAudio = document.getElementById('audio-1');
+            firstAudio.src = '/audio/1';
+            firstAudio.play().catch(error => {
+                console.error('Failed to play audio:', error);
+            });
+            currentAudio = firstAudio;
+        });
+
+        const images = [
+            'temple1.jpg', 'arc1.jpg', 'forum1.jpg', 'theatre1.jpg',
+            'thermes1.jpg', 'basilique1.jpg', 'capitole1.jpg', 'necropole1.jpg',
+            'aqueduc1.jpg', 'villa1.jpg', 'citadelle1.jpg', 'mosaique1.jpg'
+        ];
+
+        let cards = [...images, ...images];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        
+        let timer = 0;
+        let timerInterval;
+
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+        }
+
+        function createCard(imageName) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-front">?</div>
+                <div class="card-back">
+                    <img src="static/assets/images/sites/${imageName}" alt="Site archéologique">
+                </div>
+            `;
+            return card;
+        }
+
+        function initializeGame() {
+            const grid = document.getElementById('grid');
+            shuffleCards();
+            
+            cards.forEach(imageName => {
+                const card = createCard(imageName);
+                grid.appendChild(card);
+                
+                card.addEventListener('click', () => {
+                    if (!card.classList.contains('flipped') && flippedCards.length < 2) {
+                        flipCard(card);
+                    }
+                });
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer++;
+                const minutes = Math.floor(timer / 60);
+                const seconds = timer % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function flipCard(card) {
+            card.classList.add('flipped');
+            flippedCards.push(card);
+            
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                
+                const [card1, card2] = flippedCards;
+                const img1 = card1.querySelector('img').src;
+                const img2 = card2.querySelector('img').src;
+                
+                if (img1 === img2) {
+                    matchedPairs++;
+                    document.getElementById('pairs').textContent = matchedPairs;
+                    flippedCards = [];
+                    
+                    if (matchedPairs === 12) {
+                        setTimeout(gameWon, 500);
+                    }
+                } else {
+                    setTimeout(() => {
+                        card1.classList.remove('flipped');
+                        card2.classList.remove('flipped');
+                        flippedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+
+        function gameWon() {
+            clearInterval(timerInterval);
+            alert(`Félicitations! Vous avez gagné en ${moves} mouvements et ${timer} secondes!`);
+            unlockNextLevel();
+        }
+        initializeGame();
+
+        // Quiz Game Logic
+           const quizQuestions = [
+                {
+                    question: "Quel était le nom antique de l'actuelle ville de Sbiba ?",
+                    options: ["Sufetula", "Sufes", "Thugga", "Carthage"],
+                    answer: "Sufes"
+                },
+                {
+                    question: "Quel peuple a construit la forteresse de Sufes ?",
+                    options: ["Les Romains", "Les Byzantins", "Les Berbères", "Les Arabes"],
+                    answer: "Les Byzantins"
+                },
+                {
+                    question: "Quelle grande bataille a marqué la fin de l'ère byzantine à Sufes ?",
+                    options: [
+                        "La bataille de Carthage",
+                        "La bataille de Sbeïtla",
+                        "La bataille de Kairouan",
+                        "La bataille de Dougga"
+                    ],
+                    answer: "La bataille de Sbeïtla"
+                },
+                {
+                    question: "Quelle somme a été récupérée par les Arabes après leur victoire sur les Byzantins ?",
+                    options: ["100 quintaux d'or", "200 quintaux d'or", "300 quintaux d'or", "500 quintaux d'or"],
+                    answer: "300 quintaux d'or"
+                },
+                {
+                    question: "Quel édifice chrétien a été transformé en mosquée après la conquête arabe ?",
+                    options: [
+                        "La Basilique Saint-Pierre",
+                        "La Basilique de Carthage",
+                        "Jamaa Sidi Okba",
+                        "L'Église de Sufes"
+                    ],
+                    answer: "Jamaa Sidi Okba"
+                },
+                {
+                    question: "Quel monument de Sbiba est souvent comparé à celui d’El Jem ?",
+                    options: [
+                        "Le forum romain",
+                        "Le temple de Liber",
+                        "L'amphithéâtre de Sufes",
+                        "Les thermes romains"
+                    ],
+                    answer: "L'amphithéâtre de Sufes"
+                },
+                {
+                    question: "Sous quel empereur byzantin la forteresse de Sufes a-t-elle été construite ?",
+                    options: ["Constantin", "Justinian", "Théodose", "Hadrien"],
+                    answer: "Justinian"
+                },
+                {
+                    question: "Quel artefact archéologique témoigne de la présence chrétienne à Sufes ?",
+                    options: [
+                        "Des statues berbères",
+                        "Des épitaphes chrétiennes",
+                        "Des mosaïques islamiques",
+                        "Des amphores romaines"
+                    ],
+                    answer: "Des épitaphes chrétiennes"
+                }
+            ];
+
+        let currentQuestionIndex = 0;
+
+        function showQuizQuestion() {
+            const questionElement = document.getElementById('quiz-question');
+            const optionsElement = document.getElementById('quiz-options');
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+
+            questionElement.textContent = currentQuestion.question;
+            optionsElement.innerHTML = '';
+            currentQuestion.options.forEach(option => {
+                const li = document.createElement('li');
+                li.textContent = option;
+                li.onclick = () => checkAnswer(option);
+                optionsElement.appendChild(li);
+            });
+        }
+
+        function checkAnswer(selectedOption) {
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const optionsElement = document.getElementById('quiz-options');
+            const selectedLi = Array.from(optionsElement.children).find(li => li.textContent === selectedOption);
+            
+            if (selectedOption === currentQuestion.answer) {
+                selectedLi.classList.add('correct');
+                alert('Correct!');
+            } else {
+                selectedLi.classList.add('incorrect');
+                alert('Incorrect!');
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizQuestions.length) {
+                showQuizQuestion();
+            } else {
+                alert('Quiz completed!');
+                unlockNextLevel();
+            }
+        }
+
+        // Word Search Game Logic
+        const wordSearchWords = ["TEMPLE", "ARC", "FORUM", "THEATRE", "THERMES", "BASILIQUE", "CAPITOLE", "NECROPOLE", "AQUEDUC", "VILLA", "CITADELLE", "MOSAIQUE"];
+        const wordSearchGrid = [
+            ['T', 'E', 'M', 'P', 'L', 'E', 'A', 'B', 'C', 'D'],
+            ['A', 'R', 'C', 'A', 'R', 'T', 'H', 'A', 'G', 'E'],
+            ['S', 'F', 'O', 'R', 'U', 'M', 'C', 'D', 'E', 'F'],
+            ['S', 'O', 'U', 'S', 'S', 'E', 'A', 'B', 'C', 'D'],
+            ['G', 'A', 'B', 'E', 'S', 'A', 'B', 'C', 'D', 'E'],
+            ['T', 'H', 'E', 'A', 'T', 'R', 'E', 'A', 'B', 'C'],
+            ['T', 'H', 'E', 'R', 'M', 'E', 'S', 'A', 'B', 'C'],
+            ['B', 'A', 'S', 'I', 'L', 'I', 'Q', 'U', 'E', 'A'],
+            ['C', 'A', 'P', 'I', 'T', 'O', 'L', 'E', 'A', 'B'],
+            ['N', 'E', 'C', 'R', 'O', 'P', 'O', 'L', 'E', 'A'],
+            ['A', 'Q', 'U', 'E', 'D', 'U', 'C', 'A', 'B', 'C'],
+            ['V', 'I', 'L', 'L', 'A', 'A', 'B', 'C', 'D', 'E'],
+            ['C', 'I', 'T', 'A', 'D', 'E', 'L', 'L', 'E', 'A'],
+            ['M', 'O', 'S', 'A', 'I', 'Q', 'U', 'E', 'A', 'B']
+        ];
+
+        function initializeWordSearch() {
+            const gridElement = document.getElementById('word-search-grid');
+            const wordListElement = document.getElementById('word-list');
+
+            gridElement.innerHTML = '';
+            wordSearchGrid.forEach(row => {
+                row.forEach(letter => {
+                    const cell = document.createElement('div');
+                    cell.className = 'word-search-cell';
+                    cell.textContent = letter;
+                    cell.onclick = () => cell.classList.toggle('selected');
+                    gridElement.appendChild(cell);
+                });
+            });
+
+            wordListElement.innerHTML = '';
+            wordSearchWords.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.textContent = word;
+                wordListElement.appendChild(wordElement);
+            });
+        }
+
+        function showFinalMessage() {
+            const finalMessage = document.createElement('div');
+            finalMessage.className = 'final-message';
+            finalMessage.textContent = 'Félicitations! Vous avez complété tous les niveaux!';
+            document.body.appendChild(finalMessage);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showLevel(1);
+            const firstAudio = document.getElementById('audio-1');
+            firstAudio.src = '/audio/1';
+            firstAudio.play().catch(error => {
+                console.error('Failed to play audio:', error);
+            });
+            currentAudio = firstAudio;
+
+            // Initialize games for levels 3 and 4
+            showQuizQuestion();
+            initializeWordSearch();
+        });
+    </script>
+</body>
+</html>

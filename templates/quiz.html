@@ -1,0 +1,400 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puzzle Archéologique - Sbiba</title>
+    <style>
+        body {
+            font-family: 'Comfortaa', cursive;
+            background: linear-gradient(to right, #150212, #150212);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .puzzle-container {
+            display: grid;
+            grid-template-columns: 800px 300px;  /* Changed to 2 columns */
+            gap: 20px;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .event-description {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .puzzle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    width: 800px;
+    height: 1200px;
+}
+        .piece-bank {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: fit-content;
+            align-content: start;
+        }
+        
+        /* Keep existing styles for puzzle cells and pieces */
+        .puzzle-cell {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px dashed rgba(255,255,255,0.3);
+    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    position: relative;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+        
+.cell-label {
+    padding: 8px;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px 8px 0 0;
+    margin: 0;
+}
+        
+        .puzzle-piece {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            cursor: move;
+            border-radius: 8px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Keep all other existing styles */
+        .puzzle-piece:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .puzzle-piece.placed {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 6px;
+    object-fit: cover;
+    z-index: 5;
+}
+
+        
+        .puzzle-cell.dragover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.02);
+        }
+        
+        .puzzle-cell.correct {
+            border: 2px solid #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .puzzle-cell.incorrect {
+            border: 2px solid #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+        
+        .score-display {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.5rem;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 1200px) {
+    .puzzle-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .puzzle-grid {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4/3;
+    }
+    
+    .piece-bank {
+        grid-template-columns: repeat(4, 1fr);
+    }
+        }
+        </style>
+</head>
+<body>
+    <div class="puzzle-container">
+        <div class="event-description">
+            <h2>Puzzle Archéologique de Sbiba</h2>
+            <p>Placez les images sur les descriptions correspondantes</p>
+        </div>
+
+        <div class="puzzle-grid">
+            <div class="puzzle-cell" data-position="0"><div class="cell-label">Temple Romain</div></div>
+            <div class="puzzle-cell" data-position="1"><div class="cell-label">Arc de Triomphe</div></div>
+            <div class="puzzle-cell" data-position="2"><div class="cell-label">Forum Antique</div></div>
+            <div class="puzzle-cell" data-position="3"><div class="cell-label">Théâtre Romain</div></div>
+            <div class="puzzle-cell" data-position="4"><div class="cell-label">Thermes Romains</div></div>
+            <div class="puzzle-cell" data-position="5"><div class="cell-label">Basilique</div></div>
+            <div class="puzzle-cell" data-position="6"><div class="cell-label">Capitole</div></div>
+            <div class="puzzle-cell" data-position="7"><div class="cell-label">Nécropole</div></div>
+            <div class="puzzle-cell" data-position="8"><div class="cell-label">Aqueduc</div></div>
+            <div class="puzzle-cell" data-position="9"><div class="cell-label">Villa Romaine</div></div>
+            <div class="puzzle-cell" data-position="10"><div class="cell-label">Citadelle Byzantine</div></div>
+            <div class="puzzle-cell" data-position="11"><div class="cell-label">Mosaïque Romaine</div></div>
+        </div>
+
+        <div class="piece-bank">
+            <img src="{{ url_for('static', filename='assets/images/sites/temple1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="0"
+                 alt="Temple Romain">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/arc1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="1"
+                 alt="Arc de Triomphe">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/forum1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="2"
+                 alt="Forum Antique">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/theatre1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/sufetula.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="3"
+                 alt="Théâtre Romain">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/thermes1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="4"
+                 alt="Thermes Romains">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/basilique1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="5"
+                 alt="Basilique">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/capitole1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="6"
+                 alt="Capitole">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/necropole1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="7"
+                 alt="Nécropole">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/aqueduc1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/forum.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="8"
+                 alt="Aqueduc">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/villa1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/temple.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="9"
+                 alt="Villa Romaine">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/citadelle1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/temple.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="10"
+                 alt="Citadelle Byzantine">
+                 
+            <img src="{{ url_for('static', filename='assets/images/sites/mosaique1.jpg') }}"
+                 data-final-image="{{ url_for('static', filename='assets/images/sites/temple.jpg') }}"
+                 class="puzzle-piece"
+                 draggable="true"
+                 data-correct="11"
+                 alt="Mosaïque Romaine">
+        </div>
+        <div class="score-display" id="score-display"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cells = document.querySelectorAll('.puzzle-cell');
+            const pieceBank = document.querySelector('.piece-bank');
+            const pieces = Array.from(document.querySelectorAll('.puzzle-piece'));
+            let moves = 0;
+            let score = 100;
+            let correctPlacements = 0;
+        
+            // Shuffle function
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+        
+            // Shuffle pieces and reappend to piece bank
+            const shuffledPieces = shuffleArray([...pieces]);
+            pieceBank.innerHTML = '';
+            shuffledPieces.forEach(piece => {
+                pieceBank.appendChild(piece);
+            });
+        
+            pieces.forEach(piece => {
+                piece.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', piece.dataset.correct);
+                    piece.classList.add('dragging');
+                });
+        
+                piece.addEventListener('dragend', () => {
+                    piece.classList.remove('dragging');
+                });
+            });
+        
+            cells.forEach(cell => {
+                cell.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    cell.classList.add('dragover');
+                });
+        
+                cell.addEventListener('dragleave', () => {
+                    cell.classList.remove('dragover');
+                });
+        
+                cell.addEventListener('drop', e => {
+                    e.preventDefault();
+                    cell.classList.remove('dragover');
+                    
+                    const correctPosition = e.dataTransfer.getData('text');
+                    const piece = document.querySelector(`[data-correct="${correctPosition}"]`);
+                    
+                    if (!cell.querySelector('.puzzle-piece')) {
+                        const clone = piece.cloneNode(true);
+                        clone.classList.add('placed');
+                        cell.appendChild(clone);
+                        piece.style.visibility = 'hidden';
+                        
+                        if (correctPosition === cell.dataset.position) {
+                            correctPlacements++;
+                            cell.style.border = '2px solid #4CAF50';
+                            cell.style.background = 'rgba(76, 175, 80, 0.1)';
+                            score = Math.min(100, score + 10);
+                        } else {
+                            cell.style.border = '2px solid #ff6b6b';
+                            cell.style.background = 'rgba(255, 107, 107, 0.1)';
+                            score = Math.max(0, score - 5);
+                        }
+                        
+                        moves++;
+                        updateScore();
+                        checkCompletion();
+                    }
+                });
+            });
+        
+            function updateScore() {
+                const baseScore = score;
+                const movesPenalty = Math.max(0, moves - correctPlacements) * 2;
+                const finalScore = Math.max(0, baseScore - movesPenalty);
+                
+                document.getElementById('score-display').innerHTML = `
+                    Score actuel: ${finalScore}/100<br>
+                    Placements corrects: ${correctPlacements}/12<br>
+                    Mouvements: ${moves}
+                `;
+                document.getElementById('score-display').style.display = 'block';
+            }
+        
+            function checkCompletion() {
+                const placedPieces = document.querySelectorAll('.puzzle-piece.placed');
+                if (placedPieces.length === 12) {
+                    const finalScore = Math.max(0, (correctPlacements * 100)/12);
+                    
+                    document.getElementById('score-display').innerHTML = `
+                        Puzzle complété!<br>
+                        Placements corrects: ${correctPlacements}/12<br>
+                        Mouvements totaux: ${moves}<br>
+                        Score final: ${finalScore.toFixed(2)}/100
+                    `;
+                    document.getElementById('score-display').style.display = 'block';
+        
+                    setTimeout(() => {
+                        cells.forEach(cell => {
+                            cell.innerHTML = `<div class="cell-label">${cell.querySelector('.cell-label').textContent}</div>`;
+                            cell.style.border = '2px dashed rgba(255,255,255,0.3)';
+                            cell.style.background = 'rgba(255, 255, 255, 0.1)';
+                        });
+        
+                        pieces.forEach(piece => {
+                            const correctCell = document.querySelector(`[data-position="${piece.dataset.correct}"]`);
+                            const finalImage = document.createElement('img');
+                            finalImage.src = piece.dataset.finalImage;
+                            finalImage.classList.add('puzzle-piece', 'placed');
+                            finalImage.alt = piece.alt;
+                            correctCell.appendChild(finalImage);
+                            correctCell.style.border = '2px solid #4CAF50';
+                            correctCell.style.background = 'rgba(76, 175, 80, 0.1)';
+                        });
+        
+                        document.querySelector('.piece-bank').style.display = 'none';
+                    }, 2000);
+                }
+            }
+        });
+        </script>
+</body>
+</html>
