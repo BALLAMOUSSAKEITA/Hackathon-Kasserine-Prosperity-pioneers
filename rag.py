@@ -5,8 +5,6 @@ from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 import os
 
-# ⚠️ Mets ta clé OpenAI ici
-os.environ["OPENAI_API_KEY"] = "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"
 
 def extract_text_from_pdf(pdf_path):
     """Extrait le texte d'un PDF."""
